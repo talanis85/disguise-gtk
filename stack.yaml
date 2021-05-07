@@ -3,7 +3,6 @@ packages:
 - .
 extra-deps:
 - ../disguise
-- ListZipper-1.2.0.2
 - cairo-0.13.8.1
 - gio-0.13.8.1
 - glib-0.13.8.1

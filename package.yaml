@@ -23,11 +23,12 @@ dependencies:
 - disguise
 - gtk3
 - JuicyPixels
-- ListZipper
+- lens
 - mtl
 - pango
 - text
 - vector
+- zippers
 
 library:
   source-dirs: src

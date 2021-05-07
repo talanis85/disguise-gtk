@@ -1,7 +1,11 @@
 module Main where
 
+import Control.Lens
+import Control.Zipper
+
 import Disguise.Gtk.Main
 import Disguise.Cairo
+import Disguise.Cairo.Widget.List
 import Disguise.Cairo.PDF
 
 main :: IO ()
@@ -14,4 +18,10 @@ main = do
   pureMain style () (const id) (const ui)
 
 ui :: CairoWidget (V Dim) (V Dim) (StyleT IO)
-ui = alignTop $ box (stretchH (text "FOO")) `leftOf` box (stretchV (text "BAR"))
+ui =
+  (box (stretchH (text "FOO")) `leftOf` box (stretchV (text "BAR")))
+  `topOf`
+  testList
+
+testList :: CairoWidget (V Dim) (V Dim) (StyleT IO)
+testList = list (within traversed (zipper ["hello", "world", "this", "is", "a", "list"]))

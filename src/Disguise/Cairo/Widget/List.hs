@@ -1,21 +1,30 @@
+{-# LANGUAGE TypeOperators #-}
+
 module Disguise.Cairo.Widget.List
   ( list
   , listOf
   ) where
 
+import Control.Lens
 import Control.Monad.Reader
-import qualified Data.List.Zipper as Z
+import Control.Zipper
 import Disguise.Cairo.Widget hiding (clip)
 import Disguise.Widget
 import Graphics.Rendering.Cairo
 import Graphics.Rendering.Pango
 
-matchZipper :: Z.Zipper a -> ([a], Maybe a, [a])
-matchZipper (Z.Zip ls rs) = case rs of
-                              []     -> (reverse ls, Nothing, [])
-                              (r:rs) -> (reverse ls, Just r, rs)
+type ListZipper a = Top :>> [a] :>> a
 
-sliceZipper :: Z.Zipper a -> Int -> ([a], Maybe a, [a])
+iteratePlus :: (MonadPlus m) => (a -> m a) -> a -> m a
+iteratePlus f x = f x `mplus` join (iteratePlus f <$> f x)
+
+matchZipper :: Maybe (ListZipper a) -> ([a], Maybe a, [a])
+matchZipper Nothing = ([], Nothing, [])
+matchZipper (Just z) = (iterateFocus leftward z, Just (z ^. focus), iterateFocus rightward z)
+  where
+    iterateFocus f z = map (view focus) (iteratePlus f z)
+
+sliceZipper :: Maybe (ListZipper a) -> Int -> ([a], Maybe a, [a])
 sliceZipper z n = let (l, c, r) = matchZipper z
                       l' = drop (max 0 (length l - (n `div` 2))) l
                       r' = case c of
@@ -23,7 +32,7 @@ sliceZipper z n = let (l, c, r) = matchZipper z
                              Just _  -> take (n - length l' - 1) r
                   in (l', c, r')
 
-list :: (MonadIO f) => Z.Zipper String -> CairoWidget (V Dim) (V Dim) (StyleT f)
+list :: (MonadIO f) => Maybe (ListZipper String) -> CairoWidget (V Dim) (V Dim) (StyleT f)
 list zipper = FlowWidget $ \w h -> do
   col <- asks styleColor1
   fontdesc <- asks styleFont
@@ -51,7 +60,7 @@ list zipper = FlowWidget $ \w h -> do
   return drawit
 
 listOf :: (MonadIO f, MonadFix f)
-       => Z.Zipper (Bool -> CairoWidget (V Dim) (F Dim) f) -> CairoWidget (V Dim) (V Dim) f
+       => Maybe (ListZipper (Bool -> CairoWidget (V Dim) (F Dim) f)) -> CairoWidget (V Dim) (V Dim) f
 listOf zipper = FlowWidget $ \w h -> do
   let (l, c, r) = matchZipper zipper
       lw = foldr topOf (fixh 0 space) (map ($ False) l)

@@ -1,0 +1,55 @@
+name:                disguise-gtk
+version:             0.1.0.0
+github:              "talanis85/disguise-gtk"
+license:             BSD3
+author:              "Philip Kranz"
+maintainer:          "pk@pmlk.net"
+copyright:           "2021 Philip Kranz"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# synopsis:            Short description of your package
+# category:            Web
+description:         Please see the README on GitHub at <https://github.com/talanis85/disguise-gtk#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- array
+- bytestring
+- cairo
+- contravariant
+- disguise
+- gtk3
+- JuicyPixels
+- ListZipper
+- mtl
+- pango
+- text
+- vector
+
+library:
+  source-dirs: src
+
+executables:
+  disguise-demo:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - disguise-gtk
+
+tests:
+  disguise-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - disguise-gtk

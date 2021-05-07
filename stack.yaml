@@ -1,0 +1,22 @@
+resolver: lts-16.31
+packages:
+- .
+extra-deps:
+- ../disguise
+- ListZipper-1.2.0.2
+- cairo-0.13.8.1
+- gio-0.13.8.1
+- glib-0.13.8.1
+- gtk2hs-buildtools-0.13.8.0
+- gtk3-0.15.5
+- pango-0.13.8.1
+nix:
+  enable: true
+  packages:
+    - cairo
+    - gnome3.gtk
+    - zlib
+    - pango
+    - pkgconfig
+    - xlibs.xorgproto
+    - xorg.libX11

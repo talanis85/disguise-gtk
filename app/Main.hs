@@ -24,4 +24,4 @@ ui =
   testList
 
 testList :: CairoWidget (V Dim) (V Dim) (StyleT IO)
-testList = list (within traversed (zipper ["hello", "world", "this", "is", "a", "list"]))
+testList = list (within traversed (zipper ["hello", "world", "this", "is", "a", "list"])) id

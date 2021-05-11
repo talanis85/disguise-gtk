@@ -13,18 +13,16 @@ import Disguise.Widget
 import Graphics.Rendering.Cairo
 import Graphics.Rendering.Pango
 
-type ListZipper a = Top :>> [a] :>> a
-
 iteratePlus :: (MonadPlus m) => (a -> m a) -> a -> m a
 iteratePlus f x = f x `mplus` join (iteratePlus f <$> f x)
 
-matchZipper :: Maybe (ListZipper a) -> ([a], Maybe a, [a])
+matchZipper :: Maybe (h :>> a) -> ([a], Maybe a, [a])
 matchZipper Nothing = ([], Nothing, [])
-matchZipper (Just z) = (iterateFocus leftward z, Just (z ^. focus), iterateFocus rightward z)
+matchZipper (Just z) = (reverse (iterateFocus leftward z), Just (z ^. focus), iterateFocus rightward z)
   where
     iterateFocus f z = map (view focus) (iteratePlus f z)
 
-sliceZipper :: Maybe (ListZipper a) -> Int -> ([a], Maybe a, [a])
+sliceZipper :: Maybe (h :>> a) -> Int -> ([a], Maybe a, [a])
 sliceZipper z n = let (l, c, r) = matchZipper z
                       l' = drop (max 0 (length l - (n `div` 2))) l
                       r' = case c of
@@ -32,8 +30,8 @@ sliceZipper z n = let (l, c, r) = matchZipper z
                              Just _  -> take (n - length l' - 1) r
                   in (l', c, r')
 
-list :: (MonadIO f) => Maybe (ListZipper String) -> CairoWidget (V Dim) (V Dim) (StyleT f)
-list zipper = FlowWidget $ \w h -> do
+list :: (MonadIO f) => Maybe (h :>> a) -> (a -> String) -> CairoWidget (V Dim) (V Dim) (StyleT f)
+list zipper display = FlowWidget $ \w h -> do
   col <- asks styleColor1
   fontdesc <- asks styleFont
   textcolor <- asks styleColor1
@@ -45,8 +43,8 @@ list zipper = FlowWidget $ \w h -> do
   let drawit = do
         let itemcount = floor (h / lineh)
             (l, c, r) = sliceZipper zipper itemcount
-            drawLine selected str = do
-              layout <- liftIO $ layoutText context str
+            drawLine selected item = do
+              layout <- liftIO $ layoutText context (display item)
               liftIO $ layoutSetFontDescription layout (Just fontdesc)
               rectangle 0 0 w lineh
               clip
@@ -60,15 +58,15 @@ list zipper = FlowWidget $ \w h -> do
   return drawit
 
 listOf :: (MonadIO f, MonadFix f)
-       => Maybe (ListZipper (Bool -> CairoWidget (V Dim) (F Dim) f)) -> CairoWidget (V Dim) (V Dim) f
-listOf zipper = FlowWidget $ \w h -> do
+       => Maybe (h :>> a) -> (a -> Bool -> CairoWidget (V Dim) (F Dim) f) -> CairoWidget (V Dim) (V Dim) f
+listOf zipper display = FlowWidget $ \w h -> do
   let (l, c, r) = matchZipper zipper
-      lw = foldr topOf (fixh 0 space) (map ($ False) l)
-      rw = foldr topOf (fixh 0 space) (map ($ False) r)
+      lw = foldr topOf (fixh 0 space) (map ($ False) (map display l))
+      rw = foldr topOf (fixh 0 space) (map ($ False) (map display r))
   (lheight, ldraw) <- runFixedHeightWidget lw w
   (cheight, cdraw) <- case c of
     Nothing -> return (0, return ())
-    Just c' -> runFixedHeightWidget (c' True) w
+    Just c' -> runFixedHeightWidget (display c' True) w
   (rheight, rdraw) <- runFixedHeightWidget rw w
   let translation | lheight + cheight + rheight <= h = 0
                   | lheight < h / 2 = 0

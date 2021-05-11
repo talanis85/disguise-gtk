@@ -1,0 +1,109 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.1.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 4d8face7f31ed9913341b7cc30877a4e5179ba8c760692aba51e7a32dd6ee470
+
+name:           disguise-gtk
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/talanis85/disguise-gtk#readme>
+homepage:       https://github.com/talanis85/disguise-gtk#readme
+bug-reports:    https://github.com/talanis85/disguise-gtk/issues
+author:         Philip Kranz
+maintainer:     pk@pmlk.net
+copyright:      2021 Philip Kranz
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/talanis85/disguise-gtk
+
+library
+  exposed-modules:
+      Disguise.Cairo
+      Disguise.Cairo.PDF
+      Disguise.Cairo.Widget
+      Disguise.Cairo.Widget.Image
+      Disguise.Cairo.Widget.List
+      Disguise.Cairo.Widget.Meter
+      Disguise.Cairo.Widget.Text
+      Disguise.Gtk.Event
+      Disguise.Gtk.Main
+  other-modules:
+      Paths_disguise_gtk
+  hs-source-dirs:
+      src
+  build-depends:
+      JuicyPixels
+    , array
+    , base >=4.7 && <5
+    , bytestring
+    , cairo
+    , contravariant
+    , disguise >=0.1 && <0.2
+    , gtk3
+    , lens
+    , mtl
+    , pango
+    , text
+    , vector
+    , zippers
+  default-language: Haskell2010
+
+executable disguise-demo
+  main-is: Main.hs
+  other-modules:
+      Paths_disguise_gtk
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      JuicyPixels
+    , array
+    , base >=4.7 && <5
+    , bytestring
+    , cairo
+    , contravariant
+    , disguise >=0.1 && <0.2
+    , disguise-gtk
+    , gtk3
+    , lens
+    , mtl
+    , pango
+    , text
+    , vector
+    , zippers
+  default-language: Haskell2010
+
+test-suite disguise-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_disguise_gtk
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      JuicyPixels
+    , array
+    , base >=4.7 && <5
+    , bytestring
+    , cairo
+    , contravariant
+    , disguise >=0.1 && <0.2
+    , disguise-gtk
+    , gtk3
+    , lens
+    , mtl
+    , pango
+    , text
+    , vector
+    , zippers
+  default-language: Haskell2010

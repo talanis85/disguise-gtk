@@ -171,12 +171,11 @@ asyncMain :: Style
           -> IO ()
 asyncMain style init = run style keyProcessor (Controller init) LoadEvent
 
-batchMain :: ((CairoWidget (V Dim) (V Dim) (StyleT IO) -> IO ()) -> Chan Event -> IO ()) -> IO ()
-batchMain runner = do
+batchMain :: Style -> ((CairoWidget (V Dim) (V Dim) (StyleT IO) -> IO ()) -> Chan Event -> IO ()) -> IO ()
+batchMain style runner = do
   evchan <- newChan
   G.initGUI
   widgetRef <- newIORef Nothing
-  style <- defaultStyle
   drawingArea <- G.drawingAreaNew
   window <- G.windowNew
   G.containerAdd window drawingArea

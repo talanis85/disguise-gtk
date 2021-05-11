@@ -20,6 +20,7 @@ module Disguise.Gtk.Main
   , batchMain
 
   , defaultStyle
+  , defaultStyleWithFont
   , quit
   ) where
 
@@ -41,8 +42,11 @@ quit :: IO ()
 quit = G.mainQuit
 
 defaultStyle :: IO Style
-defaultStyle = do
-  font <- G.fontDescriptionFromString "monospace 8"
+defaultStyle = defaultStyleWithFont "monospace 8"
+
+defaultStyleWithFont :: String -> IO Style
+defaultStyleWithFont f = do
+  font <- G.fontDescriptionFromString f
   return Style
     { styleFont = font
     , styleColor0 = RGB 0 0 0

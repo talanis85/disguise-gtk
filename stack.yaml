@@ -2,7 +2,8 @@ resolver: lts-16.31
 packages:
 - .
 extra-deps:
-- ../disguise
+- git: "https://github.com/talanis85/disguise.git"
+  commit: "e70e1ddd21224da47a6ebaa8500240737542cb83"
 - cairo-0.13.8.1
 - gio-0.13.8.1
 - glib-0.13.8.1

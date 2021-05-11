@@ -20,7 +20,7 @@ dependencies:
 - bytestring
 - cairo
 - contravariant
-- disguise
+- disguise >= 0.1 && < 0.2
 - gtk3
 - JuicyPixels
 - lens

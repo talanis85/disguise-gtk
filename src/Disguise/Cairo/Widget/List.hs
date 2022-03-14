@@ -30,12 +30,16 @@ sliceZipper z n = let (l, c, r) = matchZipper z
                              Just _  -> take (n - length l' - 1) r
                   in (l', c, r')
 
-list :: (MonadIO f) => Maybe (h :>> a) -> (a -> String) -> CairoWidget (V Dim) (V Dim) (StyleT f)
-list zipper display = FlowWidget $ \w h -> do
-  col <- asks styleColor1
-  fontdesc <- asks styleFont
-  textcolor <- asks styleColor1
-  seltextcolor <- asks styleColor2
+list :: (MonadIO f)
+     => RGB
+     -> RGB
+     -> FontDescription
+     -> Maybe (h :>> a)
+     -> (a -> String)
+     -> CairoWidget (V Dim) (V Dim) f
+list col selcol fontdesc zipper display = FlowWidget $ \w h -> do
+  let textcolor = col
+  let seltextcolor = selcol
   context <- liftIO $ cairoCreateContext Nothing
   layout0 <- liftIO $ layoutText context "J"
   liftIO $ layoutSetFontDescription layout0 (Just fontdesc)

@@ -19,8 +19,6 @@ module Disguise.Gtk.Main
   , asyncMain
   , batchMain
 
-  , defaultStyle
-  , defaultStyleWithFont
   , quit
   ) where
 
@@ -41,21 +39,8 @@ import qualified Graphics.UI.Gtk as G
 quit :: IO ()
 quit = G.mainQuit
 
-defaultStyle :: IO Style
-defaultStyle = defaultStyleWithFont "monospace 8"
-
-defaultStyleWithFont :: String -> IO Style
-defaultStyleWithFont f = do
-  font <- G.fontDescriptionFromString f
-  return Style
-    { styleFont = font
-    , styleColor0 = RGB 0 0 0
-    , styleColor1 = RGB 1 1 1
-    , styleColor2 = RGB 1 0 0
-    }
-
 newtype Controller ev = Controller
-  { getController :: (CairoWidget (V Dim) (V Dim) (StyleT IO) -> IO ()) -> IO (ev -> IO ())
+  { getController :: (CairoWidget (V Dim) (V Dim) IO -> IO ()) -> IO (ev -> IO ())
   }
 
 instance Contravariant Controller where
@@ -97,12 +82,11 @@ keyProcessor = Processor $ \window handler -> do
     return True
   return ()
 
-run :: Style
-    -> Processor e
+run :: Processor e
     -> Controller e
     -> e
     -> IO ()
-run style processor controller loadEvent = do
+run processor controller loadEvent = do
   G.initGUI
   widgetRef <- newIORef Nothing
   drawingArea <- G.drawingAreaNew
@@ -115,9 +99,9 @@ run style processor controller loadEvent = do
       Just widget -> do
         G.Rectangle x y w h <- liftIO $ G.widgetGetAllocation drawingArea
         C.rectangle 0 0 (fromIntegral w) (fromIntegral h)
-        setSourceRGB' (styleColor0 style)
+        setSourceRGB' (RGB 0 0 0)
         C.fill
-        drawit <- liftIO $ drawFlowWidget widget (fromIntegral w) (fromIntegral h) style
+        drawit <- liftIO $ drawFlowWidget widget (fromIntegral w) (fromIntegral h)
         drawit
   window `G.on` G.deleteEvent $ do
     liftIO G.mainQuit
@@ -132,26 +116,24 @@ run style processor controller loadEvent = do
 
 -- | A main function that takes an initial model, a function to transform the model when an event arrives
 --   and a function from the model to a widget to display.
-ioMain :: Style
-       -> model
+ioMain :: model
        -> (Event -> model -> IO model)
-       -> (model -> IO (CairoWidget (V Dim) (V Dim) (StyleT IO)))
+       -> (model -> IO (CairoWidget (V Dim) (V Dim) IO))
        -> IO ()
-ioMain style initModel updateModel widget =
-  run style keyProcessor (syncIO initModel updateModel widget) LoadEvent
+ioMain initModel updateModel widget =
+  run keyProcessor (syncIO initModel updateModel widget) LoadEvent
 
 -- | Same as 'ioMain' but without performing IO
-pureMain :: Style
-         -> model
+pureMain :: model
          -> (Event -> model -> model)
-         -> (model -> CairoWidget (V Dim) (V Dim) (StyleT IO))
+         -> (model -> CairoWidget (V Dim) (V Dim) IO)
          -> IO ()
-pureMain style initModel updateModel widget =
-  ioMain style initModel (fmap (fmap return) updateModel) (return . widget)
+pureMain initModel updateModel widget =
+  ioMain initModel (fmap (fmap return) updateModel) (return . widget)
 
 syncIO :: model
        -> (ev -> model -> IO model)
-       -> (model -> IO (CairoWidget (V Dim) (V Dim) (StyleT IO)))
+       -> (model -> IO (CairoWidget (V Dim) (V Dim) IO))
        -> Controller ev
 syncIO initModel updateModel widget = Controller $ \updater -> do
   modelRef <- newIORef initModel
@@ -166,13 +148,12 @@ syncIO initModel updateModel widget = Controller $ \updater -> do
     updater widget
 
 -- | For use with typical FRP frameworks
-asyncMain :: Style
-          -> ((CairoWidget (V Dim) (V Dim) (StyleT IO) -> IO ()) -> IO (Event -> IO ()))
+asyncMain :: ((CairoWidget (V Dim) (V Dim) IO -> IO ()) -> IO (Event -> IO ()))
           -> IO ()
-asyncMain style init = run style keyProcessor (Controller init) LoadEvent
+asyncMain init = run keyProcessor (Controller init) LoadEvent
 
-batchMain :: Style -> ((CairoWidget (V Dim) (V Dim) (StyleT IO) -> IO ()) -> Chan Event -> IO ()) -> IO ()
-batchMain style runner = do
+batchMain :: ((CairoWidget (V Dim) (V Dim) IO -> IO ()) -> Chan Event -> IO ()) -> IO ()
+batchMain runner = do
   evchan <- newChan
   G.initGUI
   widgetRef <- newIORef Nothing
@@ -186,9 +167,9 @@ batchMain style runner = do
       Just widget -> do
         G.Rectangle x y w h <- liftIO $ G.widgetGetAllocation drawingArea
         C.rectangle 0 0 (fromIntegral w) (fromIntegral h)
-        setSourceRGB' (styleColor0 style)
+        setSourceRGB' (RGB 0 0 0)
         C.fill
-        drawit <- liftIO $ drawFlowWidget widget (fromIntegral w) (fromIntegral h) style
+        drawit <- liftIO $ drawFlowWidget widget (fromIntegral w) (fromIntegral h)
         drawit
   window `G.on` G.deleteEvent $ do
     liftIO G.mainQuit

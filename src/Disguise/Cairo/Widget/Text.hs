@@ -13,10 +13,8 @@ import Disguise.Widget
 import Graphics.Rendering.Cairo
 import Graphics.Rendering.Pango
 
-text :: (MonadIO f) => String -> CairoWidget (F Dim) (F Dim) (StyleT f)
-text str = FixedWidget $ do
-  fontdesc <- asks styleFont
-  textcolor <- asks styleColor1
+text :: (MonadIO f) => RGB -> FontDescription -> String -> CairoWidget (F Dim) (F Dim) f
+text textcolor fontdesc str = FixedWidget $ do
   context <- liftIO $ cairoCreateContext Nothing
   layout <- liftIO $ layoutText context str
   liftIO $ layoutSetFontDescription layout (Just fontdesc)
@@ -26,10 +24,9 @@ text str = FixedWidget $ do
         showLayout layout
   return (max 0.1 w, h, drawit)
 
-editText :: (MonadIO f) => String -> Bool -> Int -> Widget (F Dim) (F Dim) (StyleT f) (Render (), Dim)
-editText str editing cursor = FixedWidget $ do
-  fontdesc <- asks styleFont
-  textcolor <- asks $ if editing then styleColor2 else styleColor1
+editText :: (MonadIO f) => RGB -> RGB -> FontDescription -> String -> Bool -> Int -> Widget (F Dim) (F Dim) f (Render (), Dim)
+editText col1 col2 fontdesc str editing cursor = FixedWidget $ do
+  let textcolor = if editing then col2 else col1
   context <- liftIO $ cairoCreateContext Nothing
   layout <- liftIO $ if cursor >= length str
                         then layoutText context (str ++ "_")
@@ -42,9 +39,9 @@ editText str editing cursor = FixedWidget $ do
         showLayout layout
   return (w, h, (drawit, cursorPos))
 
-textBox :: (MonadIO f) => String -> Bool -> Int -> CairoWidget (V Dim) (V Dim) (StyleT f)
-textBox str editing cursor = FlowWidget $ \w h -> do
-  case editText str editing cursor of
+textBox :: (MonadIO f) => RGB -> RGB -> FontDescription -> String -> Bool -> Int -> CairoWidget (V Dim) (V Dim) f
+textBox col1 col2 fontdesc str editing cursor = FlowWidget $ \w h -> do
+  case editText col1 col2 fontdesc str editing cursor of
     FixedWidget widget -> do
       (w', h', (r, cursorPos)) <- widget
       let drawit = do

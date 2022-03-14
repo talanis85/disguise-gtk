@@ -24,14 +24,9 @@ module Disguise.Cairo.Widget
   , drawFlowWidget
 
   -- * Styling
-  , StyleT, Style (..), RGB (..)
-  , runStyleT
-  , Styling
-  , withStyling, withStylingM
-  , font, color0, color1, color2
   , loadFont
-  , reverseColors, reverseFgBg
   , parseRGB
+  , RGB (..)
 
   -- * Basic layout combinators
   , leftOf, topOf
@@ -48,6 +43,9 @@ module Disguise.Cairo.Widget
   -- * Helpers
   , setSourceRGB'
   , retain
+
+  -- * Re-exports
+  , FontDescription
   ) where
 
 import Control.Monad.Reader
@@ -75,69 +73,16 @@ parseRGB _ = error "Invalid RGB string"
 reverseRGB :: RGB -> RGB
 reverseRGB (RGB r g b) = RGB (1 - r) (1 - g) (1 - b)
 
--- | Style type
-data Style = Style
-  { styleFont :: FontDescription
-  , styleColor0 :: RGB
-  , styleColor1 :: RGB
-  , styleColor2 :: RGB
-  }
-
--- | Style modifiers
---
--- For example, to draw text with a custom color and font:
---
--- > withStyling (color1 customColor <> font customFont) (text "Hello World")
-type Styling = Endo Style
-
-withStyling :: (Monad f) => Styling -> CairoWidget w h (StyleT f) -> CairoWidget w h (StyleT f)
-withStyling styling = hoistWidget (local (appEndo styling))
-
-withStylingM :: (Monad f) => f Styling -> CairoWidget w h (StyleT f) -> CairoWidget w h (StyleT f)
-withStylingM styling = hoistWidget $ \stylet -> ReaderT $ \style -> do
-  s <- styling
-  runStyleT stylet (appEndo s style)
-
 loadFont :: String -> IO FontDescription
 loadFont fontname = liftIO $ fontDescriptionFromString fontname
-
-font :: FontDescription -> Styling
-font f = Endo $ \style -> style { styleFont = f }
-
-color0 :: RGB -> Styling
-color0 rgb = Endo $ \style -> style { styleColor0 = rgb }
-
-color1 :: RGB -> Styling
-color1 rgb = Endo $ \style -> style { styleColor1 = rgb }
-
-color2 :: RGB -> Styling
-color2 rgb = Endo $ \style -> style { styleColor2 = rgb }
-
-reverseColors :: Styling
-reverseColors = Endo $ \style -> style
-  { styleColor0 = reverseRGB (styleColor0 style)
-  , styleColor1 = reverseRGB (styleColor1 style)
-  , styleColor2 = reverseRGB (styleColor2 style)
-  }
-
-reverseFgBg :: Styling
-reverseFgBg = Endo $ \style -> style
-  { styleColor0 = styleColor1 style
-  , styleColor1 = styleColor0 style
-  }
-
-type StyleT m = ReaderT Style m
-
-runStyleT :: StyleT m a -> Style -> m a
-runStyleT = runReaderT
 
 type CairoWidget w h f = Widget w h f (Render ())
 
 retain r = save *> r <* restore
 
 -- | Convert a 'FlowWidget' to a Cairo render action
-drawFlowWidget :: (Functor f) => CairoWidget (V w) (V h) (StyleT f) -> w -> h -> Style -> f (Render ())
-drawFlowWidget widget w h style = case hoistWidget (\x -> runReaderT x style) widget of
+drawFlowWidget :: (Functor f) => CairoWidget (V w) (V h) f -> w -> h -> f (Render ())
+drawFlowWidget widget w h = case widget of
   FlowWidget widget' -> widget' w h
 
 clip' :: Dim -> Dim -> Render () -> Render ()
@@ -375,41 +320,33 @@ scale (FixedWidget widget) = FlowWidget $ \w h -> do
   return (Cairo.scale scaling scaling >> retain r)
 
 -- | Fill a widget's background
-fill :: (Monad f, DimOf w ~ Dim, DimOf h ~ Dim) => CairoWidget w h (StyleT f) -> CairoWidget w h (StyleT f)
-fill (FlowWidget widget) = FlowWidget $ \w h -> do
+fill :: (Monad f, DimOf w ~ Dim, DimOf h ~ Dim) => RGB -> CairoWidget w h f -> CairoWidget w h f
+fill col (FlowWidget widget) = FlowWidget $ \w h -> do
   r <- widget w h
-  col <- asks styleColor0
   return (drawFill col w h r)
-fill (FixedWidget widget) = FixedWidget $ do
+fill col (FixedWidget widget) = FixedWidget $ do
   (w, h, r) <- widget
-  col <- asks styleColor0
   return (w, h, drawFill col w h r)
-fill (FixedWidthWidget widget) = FixedWidthWidget $ \h -> do
+fill col (FixedWidthWidget widget) = FixedWidthWidget $ \h -> do
   (w, r) <- widget h
-  col <- asks styleColor0
   return (w, drawFill col w h r)
-fill (FixedHeightWidget widget) = FixedHeightWidget $ \w -> do
+fill col (FixedHeightWidget widget) = FixedHeightWidget $ \w -> do
   (h, r) <- widget w
-  col <- asks styleColor0
   return (h, drawFill col w h r)
 
 -- | Draw a box around a widget
-box :: (Monad f, DimOf w ~ Dim, DimOf h ~ Dim) => CairoWidget w h (StyleT f) -> CairoWidget w h (StyleT f)
-box (FlowWidget widget) = FlowWidget $ \w h -> do
+box :: (Monad f, DimOf w ~ Dim, DimOf h ~ Dim) => RGB -> CairoWidget w h f -> CairoWidget w h f
+box col (FlowWidget widget) = FlowWidget $ \w h -> do
   r <- widget w h
-  col <- asks styleColor1
   return (drawBox col w h r)
-box (FixedWidget widget) = FixedWidget $ do
+box col (FixedWidget widget) = FixedWidget $ do
   (w, h, r) <- widget
-  col <- asks styleColor1
   return (w, h, drawBox col w h r)
-box (FixedWidthWidget widget) = FixedWidthWidget $ \h -> do
+box col (FixedWidthWidget widget) = FixedWidthWidget $ \h -> do
   (w, r) <- widget h
-  col <- asks styleColor1
   return (w, drawBox col w h r)
-box (FixedHeightWidget widget) = FixedHeightWidget $ \w -> do
+box col (FixedHeightWidget widget) = FixedHeightWidget $ \w -> do
   (h, r) <- widget w
-  col <- asks styleColor1
   return (h, drawBox col w h r)
 
 pad :: (Monad f, DimOf w ~ Dim, DimOf h ~ Dim) => Dim -> CairoWidget w h f -> CairoWidget w h f
@@ -477,20 +414,3 @@ spaceV :: (Applicative f, Num w) => CairoWidget (F w) (V h) f
 spaceV = FixedWidthWidget $ \h -> pure (0, return ())
 
 setSourceRGB' (RGB a b c) = setSourceRGB a b c
-
-{-
-withKeyString :: String -> CairoWidget w h f -> CairoWidget w h f
-withKeyString str widget = Widget $ \w h -> do
-  (rw, rh, r) <- fromWidget widget w h
-  fontdesc <- asks styleFont
-  textcolor <- asks styleColor1
-  context <- liftIO $ cairoCreateContext Nothing
-  layout <- liftIO $ layoutText context str
-  let bw = valueOf (Proxy :: Proxy w) w rw
-      bh = valueOf (Proxy :: Proxy h) h rh
-      drawit = do
-        retain r
-        setSourceRGB' textcolor
-        showLayout layout
-  return (rw, rh, drawit)
--}

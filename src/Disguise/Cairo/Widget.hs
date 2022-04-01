@@ -172,7 +172,7 @@ topOf :: (MonadFix f)
 topOf (FixedWidget a) (FixedWidget b) = FixedWidget $ do
   (w1, h1, r1) <- a
   (w2, h2, r2) <- b
-  return (w1 + w2, h1 + h2, retain r1 >> translate 0 h1 >> retain r2)
+  return (max w1 w2, h1 + h2, retain r1 >> translate 0 h1 >> retain r2)
 topOf (FixedWidget a) (FixedWidthWidget b) = FixedWidthWidget $ \h -> do
   (w1, h1, r1) <- a
   (w2, r2) <- b (max 0 (h - h1))

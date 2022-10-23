@@ -2,11 +2,13 @@
 module Disguise.Cairo.Widget.Image
   ( flowImage
   , fixedImage
+  , fixedWidthImage
+  , fixedHeightImage
   , loadImage
   , loadImageBS
   , defaultImage
   , emptyImage
-  , CairoImage
+  , CairoImage (..)
   ) where
 
 import Codec.Picture
@@ -52,6 +54,32 @@ flowImage (CairoImage surface) = FlowWidget $ \w h -> do
         setSourceSurface surface 0 0
         paint
   return drawit
+
+fixedWidthImage :: (MonadIO f) => CairoImage -> CairoWidget (F Dim) (V Dim) f
+fixedWidthImage (CairoImage surface) = FixedWidthWidget $ \h -> do
+  iw <- imageSurfaceGetWidth surface
+  ih <- imageSurfaceGetHeight surface
+  let scaleX = 1
+      scaleY = h / fromIntegral ih
+      scaleXY = min scaleX scaleY
+      drawit = do
+        scale scaleXY scaleXY
+        setSourceSurface surface 0 0
+        paint
+  return (fromIntegral iw, drawit)
+
+fixedHeightImage :: (MonadIO f) => CairoImage -> CairoWidget (V Dim) (F Dim) f
+fixedHeightImage (CairoImage surface) = FixedHeightWidget $ \w -> do
+  iw <- imageSurfaceGetWidth surface
+  ih <- imageSurfaceGetHeight surface
+  let scaleX = w / fromIntegral iw
+      scaleY = 1
+      scaleXY = min scaleX scaleY
+      drawit = do
+        scale scaleXY scaleXY
+        setSourceSurface surface 0 0
+        paint
+  return (fromIntegral ih, drawit)
 
 fixedImage :: (MonadIO f) => CairoImage -> CairoWidget (F Dim) (F Dim) f
 fixedImage (CairoImage surface) = FixedWidget $ do

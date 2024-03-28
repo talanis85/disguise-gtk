@@ -6,6 +6,8 @@ module Disguise.Cairo.Widget.List
   ) where
 
 import Control.Lens
+import Control.Monad
+import Control.Monad.Fix
 import Control.Monad.Reader
 import Control.Zipper
 import Disguise.Cairo.Widget hiding (clip)

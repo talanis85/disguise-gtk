@@ -48,6 +48,7 @@ module Disguise.Cairo.Widget
   , FontDescription
   ) where
 
+import Control.Monad.Fix
 import Control.Monad.Reader
 import Data.Char (digitToInt)
 import Data.Functor.Identity
